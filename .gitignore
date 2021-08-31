@@ -1,8 +1,8 @@
-
+*.pyc
 *.iml
 
 *.xml
-
+*.local
 data/
-
-*.pyc
+**/CheXpert-v1.0-small
+.gitignore
