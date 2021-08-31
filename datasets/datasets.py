@@ -6,9 +6,9 @@ from torch.utils.data.dataset import Subset
 from torchvision import datasets, transforms
 
 from utils.utils import set_random_seed
-
-DATA_PATH = '~/data/'
-IMAGENET_PATH = '~/data/ImageNet'
+ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))  # This is your Project Root
+DATA_PATH = os.path.join(ROOT_DIR, 'data')
+IMAGENET_PATH = os.path.join(ROOT_DIR, 'data/ImageNet')
 
 
 CIFAR10_SUPERCLASS = list(range(10))  # one class
