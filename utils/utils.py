@@ -25,9 +25,9 @@ class Logger(object):
                 os.mkdir(logdir)
 
             if len(os.listdir(logdir)) != 0 and ask:
-                ans = input("log_dir is not empty. All data inside log_dir will be deleted. "
-                            "Will you proceed [y/N]? ")
-                if ans in ['y', 'Y']:
+                # ans = input("log_dir is not empty. All data inside log_dir will be deleted. "
+                #             "Will you proceed [y/N]? ")
+                if True:  # ans in ['y', 'Y']:
                     shutil.rmtree(logdir)
                 else:
                     exit(1)
