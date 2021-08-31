@@ -40,7 +40,7 @@ else:
 P.ood_layer = P.ood_layer[0]
 
 ### Initialize dataset ###
-train_set, test_set, image_size, n_classes = get_dataset(P, dataset=P.dataset)
+train_set, test_set, image_size, n_classes = get_dataset(P, dataset=P.dataset, download=True)
 P.image_size = image_size
 P.n_classes = n_classes
 
@@ -52,7 +52,7 @@ if P.one_class_idx is not None:
     train_set = get_subclass_dataset(train_set, classes=cls_list[P.one_class_idx])
     test_set = get_subclass_dataset(test_set, classes=cls_list[P.one_class_idx])
 
-kwargs = {'pin_memory': False, 'num_workers': 4}
+kwargs = {'pin_memory': False, 'num_workers': 0}
 
 if P.multi_gpu:
     train_sampler = DistributedSampler(train_set, num_replicas=P.n_gpus, rank=P.local_rank)

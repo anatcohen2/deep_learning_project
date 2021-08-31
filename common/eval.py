@@ -38,7 +38,7 @@ if P.one_class_idx is not None:
     train_set = get_subclass_dataset(train_set, classes=cls_list[P.one_class_idx])
     test_set = get_subclass_dataset(test_set, classes=cls_list[P.one_class_idx])
 
-kwargs = {'pin_memory': False, 'num_workers': 4}
+kwargs = {'pin_memory': False, 'num_workers': 0}
 
 train_loader = DataLoader(train_set, shuffle=True, batch_size=P.batch_size, **kwargs)
 test_loader = DataLoader(test_set, shuffle=False, batch_size=P.test_batch_size, **kwargs)
