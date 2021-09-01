@@ -1,8 +1,6 @@
-# from data_process import remove_unknown
 import pandas as pd
 import numpy as np
 from torch.utils.data import Dataset
-import os
 from PIL import Image
 
 class CheXpertDataset(Dataset):
@@ -20,12 +18,15 @@ class CheXpertDataset(Dataset):
         self.path_to_images = path_to_images
         self.df = pd.read_csv(f"{path_to_images}/{fold}.csv")
 
+
         if(starter_images):
             starter_images = pd.read_csv("starter_images.csv")
             self.df=pd.merge(left=self.df,right=starter_images, how="inner",on="Image Index")
 
         if(include_uncertainty == False):
             self.df = self.remove_unknown(self.df)
+        
+        self.targets = (self.df['No Finding']==1.0)*1
             
         # can limit to sample, useful for testing
         # if fold == "train" or fold =="val": sample=500
@@ -66,7 +67,7 @@ class CheXpertDataset(Dataset):
     def __getitem__(self, idx):
 
         image = Image.open(self.df.index[idx])
-        image = image.convert('RGB')
+        # image = image.convert('RGB')
 
         label = np.zeros(len(self.PRED_LABEL), dtype=int)
         for i in range(0, len(self.PRED_LABEL)):
@@ -75,10 +76,15 @@ class CheXpertDataset(Dataset):
                 label[i] = self.df[self.PRED_LABEL[i].strip()
                                    ].iloc[idx].astype('int')
 
+
+        image = image.resize((320,320))
+
         if self.transform:
             image = self.transform(image)
 
-        return (image, label,self.df.index[idx])
+        image = np.array(image)
+
+        return (image, label[0])
 
     def remove_unknown(self, df):
         anomalies = ['Enlarged Cardiomediastinum', 'Cardiomegaly', 'Lung Opacity',
@@ -89,24 +95,3 @@ class CheXpertDataset(Dataset):
         idxs = ~((df[anomalies] == -1).any(axis=1))
         new_df = df[idxs]
         return new_df
-
-
-# dataset_train = CheXpertDataset(
-#         path_to_images='CheXpert-v1.0-small',
-#         fold='train',
-#         include_uncertainty=True)
-
-# dataset_train_filtered = CheXpertDataset(
-#         path_to_images='CheXpert-v1.0-small',
-#         fold='train',
-#         include_uncertainty=False)
-
-# dataset_valid = CheXpertDataset(
-#         path_to_images='CheXpert-v1.0-small',
-#         fold='valid',
-#         include_uncertainty=True)
-
-# dataset_valid_filtered = CheXpertDataset(
-#         path_to_images='CheXpert-v1.0-small',
-#         fold='valid',
-#         include_uncertainty=False)

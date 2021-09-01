@@ -5,6 +5,8 @@ import torch
 from torch.utils.data.dataset import Subset
 from torchvision import datasets, transforms
 
+from chexpert_dataset import *
+
 from utils.utils import set_random_seed
 ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))  # This is your Project Root
 DATA_PATH = os.path.join(ROOT_DIR, 'data')
@@ -13,6 +15,7 @@ IMAGENET_PATH = os.path.join(ROOT_DIR, 'data/ImageNet')
 
 CIFAR10_SUPERCLASS = list(range(10))  # one class
 IMAGENET_SUPERCLASS = list(range(30))  # one class
+CHEXPERT_SUPERCLASS = list(range(2))  # one class
 
 CIFAR100_SUPERCLASS = [
     [4, 31, 55, 72, 95],
@@ -130,7 +133,7 @@ def get_dataset(P, dataset, test_only=False, image_size=None, download=False, ev
                                                                                  P.resize_factor, P.resize_fix)
         else:
             train_transform, test_transform = get_transform_imagenet()
-    else:
+    elif dataset!='chexpert': #TODO = check if needed also on chexpert
         train_transform, test_transform = get_transform(image_size=image_size)
 
     if dataset == 'cifar10':
@@ -225,6 +228,20 @@ def get_dataset(P, dataset, test_only=False, image_size=None, download=False, ev
         test_set = datasets.ImageFolder(test_dir, transform=test_transform)
         test_set = get_subset_with_len(test_set, length=3000, shuffle=True)
 
+    elif dataset=='chexpert':
+        train_set = CheXpertDataset(
+            path_to_images='CheXpert-v1.0-small',
+            fold='train',
+            include_uncertainty=False,
+            transform=transforms.functional.equalize)
+        test_set = CheXpertDataset(
+            path_to_images='CheXpert-v1.0-small',
+            fold='valid',
+            include_uncertainty=False,
+            transform=transforms.functional.equalize)
+        image_size=(320,320) #TODO - check size is legal
+        n_classes=2 #TODO - right now - classes are only no_finding=0/1
+
     else:
         raise NotImplementedError()
 
@@ -241,6 +258,8 @@ def get_superclass_list(dataset):
         return CIFAR100_SUPERCLASS
     elif dataset == 'imagenet':
         return IMAGENET_SUPERCLASS
+    elif dataset == 'chexpert':
+        return CHEXPERT_SUPERCLASS
     else:
         raise NotImplementedError()
 

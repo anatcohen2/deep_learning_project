@@ -7,7 +7,8 @@ def parse_args(default=False):
     parser = ArgumentParser(description='Pytorch implementation of CSI')
 
     parser.add_argument('--dataset', help='Dataset',
-                        choices=['cifar10', 'cifar100', 'imagenet'], type=str)
+                        choices=['cifar10', 'cifar100', 'imagenet', 'chexpert'], type=str,
+                        default='chexpert')
     parser.add_argument('--one_class_idx', help='None: multi-class, Not None: one-class',
                         default=None, type=int)
     parser.add_argument('--model', help='Model',
@@ -40,7 +41,7 @@ def parse_args(default=False):
                         default=1000, type=int)
     parser.add_argument('--optimizer', help='Optimizer',
                         choices=['sgd', 'lars'],
-                        default='lars', type=str)
+                        default='sgd', type=str)
     parser.add_argument('--lr_scheduler', help='Learning rate scheduler',
                         choices=['step_decay', 'cosine'],
                         default='cosine', type=str)

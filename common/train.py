@@ -92,7 +92,7 @@ for ood in P.ood_dataset:
 
 ### Initialize model ###
 
-simclr_aug = C.get_simclr_augmentation(P, image_size=P.image_size).to(device)
+# simclr_aug = C.get_simclr_augmentation(P, image_size=P.image_size).to(device)
 P.shift_trans, P.K_shift = C.get_shift_module(P, eval=True)
 P.shift_trans = P.shift_trans.to(device)
 
@@ -143,6 +143,6 @@ if P.mode == 'sup_linear' or P.mode == 'sup_CSI_linear':
     model.load_state_dict(checkpoint, strict=not P.no_strict)
 
 if P.multi_gpu:
-    simclr_aug = apex.parallel.DistributedDataParallel(simclr_aug, delay_allreduce=True)
+    # simclr_aug = apex.parallel.DistributedDataParallel(simclr_aug, delay_allreduce=True)
     model = apex.parallel.convert_syncbn_model(model)
     model = apex.parallel.DistributedDataParallel(model, delay_allreduce=True)
