@@ -83,7 +83,7 @@ class CheXpertDataset(Dataset):
 
         if self.transform:
             image = self.transform(image)
-            label = torch.tensor(label)
+            label = torch.tensor(label, dtype=torch.long)
 
         return image, label
 

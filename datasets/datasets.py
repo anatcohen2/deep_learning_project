@@ -151,7 +151,7 @@ def get_dataset(P, dataset, test_only=False, image_size=None, download=False, ev
             train_transform, test_transform = get_transform_imagenet()
 
     elif dataset == 'chexpert':
-        train_transform, test_transform = get_transform_chexpert(size=320)
+        train_transform, test_transform = get_transform_chexpert(size=64)
 
     else:
         train_transform, test_transform = get_transform(image_size=image_size)
@@ -249,7 +249,7 @@ def get_dataset(P, dataset, test_only=False, image_size=None, download=False, ev
         test_set = get_subset_with_len(test_set, length=3000, shuffle=True)
 
     elif dataset == 'chexpert':
-        image_size = (320, 320, 1)    # TODO - check size is legal
+        image_size = (64, 64, 1)    # TODO - check size is legal
         n_classes = 2   # TODO - right now - classes are only no_finding=0/1
         train_set = CheXpertDataset(
             path_to_images=os.path.join(DATA_PATH, 'CheXpert-v1.0-small'),

@@ -97,6 +97,9 @@ P.shift_trans, P.K_shift = C.get_shift_module(P, eval=True)
 P.shift_trans = P.shift_trans.to(device)
 
 model = C.get_classifier(P.model, n_classes=P.n_classes).to(device)
+if P.dataset == 'chexpert':
+    model.conv1 = nn.Conv2d(1, 64, kernel_size=7, stride=2, padding=3, bias=False)
+
 model = C.get_shift_classifer(model, P.K_shift).to(device)
 
 criterion = nn.CrossEntropyLoss().to(device)
