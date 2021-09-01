@@ -2,6 +2,9 @@ import pandas as pd
 import numpy as np
 from torch.utils.data import Dataset
 from PIL import Image
+import torch
+import os
+
 
 class CheXpertDataset(Dataset):
     def __init__(
@@ -15,18 +18,18 @@ class CheXpertDataset(Dataset):
             starter_images=False):
 
         self.transform = transform
-        self.path_to_images = path_to_images
+        self.path_to_images = os.path.dirname(path_to_images)
         self.df = pd.read_csv(f"{path_to_images}/{fold}.csv")
+        self.df['No Finding'].fillna(0, inplace=True)
 
-
-        if(starter_images):
+        if starter_images:
             starter_images = pd.read_csv("starter_images.csv")
-            self.df=pd.merge(left=self.df,right=starter_images, how="inner",on="Image Index")
+            self.df = pd.merge(left=self.df,right=starter_images, how="inner",on="Image Index")
 
-        if(include_uncertainty == False):
+        if not include_uncertainty:
             self.df = self.remove_unknown(self.df)
         
-        self.targets = (self.df['No Finding']==1.0)*1
+        self.targets = self.df['No Finding'].values
             
         # can limit to sample, useful for testing
         # if fold == "train" or fold =="val": sample=500
@@ -38,7 +41,7 @@ class CheXpertDataset(Dataset):
                 if len(self.df[self.df[finding] == 1]) > 0:
                     self.df = self.df[self.df[finding] == 1]
                 else:
-                    print("No positive cases exist for "+LABEL+", returning all unfiltered cases")
+                    print(f"No positive cases exist for {finding}, returning all unfiltered cases")
             else:
                 print("cannot filter on finding " + finding +
                       " as not in data - please check spelling")
@@ -59,38 +62,35 @@ class CheXpertDataset(Dataset):
             'Pleural Other',
             'Fracture',
             'Support Devices']
-        RESULT_PATH = "results/"
+
+        # RESULT_PATH = "results/"
 
     def __len__(self):
         return len(self.df)
 
     def __getitem__(self, idx):
 
-        image = Image.open(self.df.index[idx])
+        image = Image.open(os.path.join(self.path_to_images, self.df.index[idx]))
         # image = image.convert('RGB')
 
-        label = np.zeros(len(self.PRED_LABEL), dtype=int)
+        labels = np.zeros(len(self.PRED_LABEL), dtype=int)
         for i in range(0, len(self.PRED_LABEL)):
-             # can leave zero if zero, else make one
-            if(self.df[self.PRED_LABEL[i].strip()].iloc[idx].astype('int') >= -1):
-                label[i] = self.df[self.PRED_LABEL[i].strip()
-                                   ].iloc[idx].astype('int')
+            # can leave zero if zero, else make one
+            if self.df[self.PRED_LABEL[i].strip()].iloc[idx].astype('int') >= -1:
+                labels[i] = self.df[self.PRED_LABEL[i].strip()].iloc[idx].astype('int')
 
-
-        image = image.resize((320,320))
+        label = np.array(labels[0])   # only No finding
 
         if self.transform:
             image = self.transform(image)
+            label = torch.tensor(label)
 
-        image = np.array(image)
-
-        return (image, label[0])
+        return image, label
 
     def remove_unknown(self, df):
         anomalies = ['Enlarged Cardiomediastinum', 'Cardiomegaly', 'Lung Opacity',
-            'Lung Lesion', 'Edema', 'Consolidation', 'Pneumonia', 'Atelectasis',
-            'Pneumothorax', 'Pleural Effusion', 'Pleural Other', 'Fracture']
-
+                     'Lung Lesion', 'Edema', 'Consolidation', 'Pneumonia', 'Atelectasis',
+                     'Pneumothorax', 'Pleural Effusion', 'Pleural Other', 'Fracture']
 
         idxs = ~((df[anomalies] == -1).any(axis=1))
         new_df = df[idxs]

@@ -5,7 +5,7 @@ import torch
 from torch.utils.data.dataset import Subset
 from torchvision import datasets, transforms
 
-from chexpert_dataset import *
+from chexpert_dataset import CheXpertDataset
 
 from utils.utils import set_random_seed
 ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))  # This is your Project Root
@@ -125,6 +125,22 @@ def get_transform_imagenet():
     return train_transform, test_transform
 
 
+def get_transform_chexpert(size=320):
+
+    train_transform = transforms.Compose([
+        transforms.RandomEqualize(p=1.0),
+        transforms.Resize((size, size)),
+        transforms.ToTensor(),
+    ])
+    test_transform = transforms.Compose([
+        transforms.RandomEqualize(p=1.0),
+        transforms.Resize(size),
+        transforms.ToTensor(),
+    ])
+
+    return train_transform, test_transform
+
+
 def get_dataset(P, dataset, test_only=False, image_size=None, download=False, eval=False):
     if dataset in ['imagenet', 'cub', 'stanford_dogs', 'flowers102',
                    'places365', 'food_101', 'caltech_256', 'dtd', 'pets']:
@@ -133,7 +149,11 @@ def get_dataset(P, dataset, test_only=False, image_size=None, download=False, ev
                                                                                  P.resize_factor, P.resize_fix)
         else:
             train_transform, test_transform = get_transform_imagenet()
-    elif dataset!='chexpert': #TODO = check if needed also on chexpert
+
+    elif dataset == 'chexpert':
+        train_transform, test_transform = get_transform_chexpert(size=320)
+
+    else:
         train_transform, test_transform = get_transform(image_size=image_size)
 
     if dataset == 'cifar10':
@@ -228,19 +248,20 @@ def get_dataset(P, dataset, test_only=False, image_size=None, download=False, ev
         test_set = datasets.ImageFolder(test_dir, transform=test_transform)
         test_set = get_subset_with_len(test_set, length=3000, shuffle=True)
 
-    elif dataset=='chexpert':
+    elif dataset == 'chexpert':
+        image_size = (320, 320, 1)    # TODO - check size is legal
+        n_classes = 2   # TODO - right now - classes are only no_finding=0/1
         train_set = CheXpertDataset(
-            path_to_images='CheXpert-v1.0-small',
+            path_to_images=os.path.join(DATA_PATH, 'CheXpert-v1.0-small'),
             fold='train',
             include_uncertainty=False,
-            transform=transforms.functional.equalize)
+            transform=train_transform)
+
         test_set = CheXpertDataset(
-            path_to_images='CheXpert-v1.0-small',
+            path_to_images=os.path.join(DATA_PATH, 'CheXpert-v1.0-small'),
             fold='valid',
             include_uncertainty=False,
-            transform=transforms.functional.equalize)
-        image_size=(320,320) #TODO - check size is legal
-        n_classes=2 #TODO - right now - classes are only no_finding=0/1
+            transform=test_transform)
 
     else:
         raise NotImplementedError()

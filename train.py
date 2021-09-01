@@ -32,7 +32,7 @@ for epoch in range(start_epoch, P.epochs + 1):
     kwargs = {}
     kwargs['linear'] = linear
     kwargs['linear_optim'] = linear_optim
-#     kwargs['simclr_aug'] = simclr_aug
+    kwargs['simclr_aug'] = simclr_aug
 
     train(P, epoch, model, criterion, optimizer, scheduler_warmup, train_loader, logger=logger, **kwargs)
 
