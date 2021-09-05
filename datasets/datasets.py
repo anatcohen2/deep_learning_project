@@ -151,7 +151,7 @@ def get_dataset(P, dataset, test_only=False, image_size=None, download=False, ev
             train_transform, test_transform = get_transform_imagenet()
 
     elif dataset == 'chexpert':
-        train_transform, test_transform = get_transform_chexpert(size=64)
+        train_transform, test_transform = get_transform_chexpert(size=image_size)
 
     else:
         train_transform, test_transform = get_transform(image_size=image_size)

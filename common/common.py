@@ -35,6 +35,8 @@ def parse_args(default=False):
                         default=5, type=int)
     parser.add_argument('--save_step', help='Epoch steps to save models',
                         default=10, type=int)
+    parser.add_argument('--image_size_input', help='resize photos to this value',
+                        default=256, type=int)
 
     ##### Training Configurations #####
     parser.add_argument('--epochs', help='Epochs',
