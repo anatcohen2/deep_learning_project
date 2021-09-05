@@ -97,8 +97,10 @@ def train(P, epoch, model, criterion, optimizer, scheduler, loader, logger=None,
 
         if count % 50 == 0:
             log_('[Epoch %3d; %3d] [Time %.3f] [Data %.3f] [LR %.5f]\n'
+                'total_samples=%3d, count=%3d, n=%3d, gpus=%3d\n'
                  '[LossC %f] [LossSim %f] [LossShift %f]' %
                  (epoch, count, batch_time.value, data_time.value, lr,
+                     count*batch_size, count, n, P.n_gpus,
                   losses['cls'].value, losses['sim'].value, losses['shift'].value))
 
     log_('[DONE] [Time %.3f] [Data %.3f] [LossC %f] [LossSim %f] [LossShift %f]' %
