@@ -134,7 +134,7 @@ def get_transform_chexpert(size=320):
     ])
     test_transform = transforms.Compose([
         transforms.RandomEqualize(p=1.0),
-        transforms.Resize(size),
+        transforms.Resize(size, size),
         transforms.ToTensor(),
     ])
 
