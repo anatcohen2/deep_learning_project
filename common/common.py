@@ -41,6 +41,8 @@ def parse_args(default=False):
     ##### Training Configurations #####
     parser.add_argument('--epochs', help='Epochs',
                         default=1000, type=int)
+    parser.add_argument('--sample', help='num of training samples to load',
+                        default=0, type=int)
     parser.add_argument('--optimizer', help='Optimizer',
                         choices=['sgd', 'lars'],
                         default='sgd', type=str)

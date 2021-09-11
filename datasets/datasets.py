@@ -256,7 +256,8 @@ def get_dataset(P, dataset, test_only=False, image_size=None, download=False, ev
             path_to_images=os.path.join(DATA_PATH, 'CheXpert-v1.0-small'),
             fold='train',
             include_uncertainty=False,
-            transform=train_transform)
+            transform=train_transform,
+            sample=P.sample)
 
         test_set = CheXpertDataset(
             path_to_images=os.path.join(DATA_PATH, 'CheXpert-v1.0-small'),

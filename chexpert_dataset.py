@@ -29,12 +29,13 @@ class CheXpertDataset(Dataset):
         if not include_uncertainty:
             self.df = self.remove_unknown(self.df)
         
-        self.targets = self.df['No Finding'].values
             
         # can limit to sample, useful for testing
         # if fold == "train" or fold =="val": sample=500
         if(sample > 0 and sample < len(self.df)):
             self.df = self.df.sample(sample)
+
+        self.targets = self.df['No Finding'].values
 
         if not finding == "any":  # can filter for positive findings of the kind described; useful for evaluation
             if finding in self.df.columns:
