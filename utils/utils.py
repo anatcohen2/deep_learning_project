@@ -126,6 +126,18 @@ def load_checkpoint(logdir, mode='last'):
 
 
 def save_checkpoint(epoch, model_state, optim_state, logdir):
+    last_model = os.path.join(logdir, f'epoch{epoch}.model')
+    last_optim = os.path.join(logdir, f'epoch{epoch}.optim')
+    last_config = os.path.join(logdir, f'epoch{epoch}.config')
+
+    opt = {
+        'epoch': epoch,
+    }
+    torch.save(model_state, last_model)
+    torch.save(optim_state, last_optim)
+    with open(last_config, 'wb') as handle:
+        pickle.dump(opt, handle, protocol=pickle.HIGHEST_PROTOCOL)
+
     last_model = os.path.join(logdir, 'last.model')
     last_optim = os.path.join(logdir, 'last.optim')
     last_config = os.path.join(logdir, 'last.config')
