@@ -16,6 +16,9 @@ def get_simclr_augmentation(P, image_size):
     color_jitter = TL.ColorJitterLayer(brightness=0.4, contrast=0.4, saturation=0.4, hue=0.1, p=0.8)
     color_gray = TL.RandomColorGrayLayer(p=0.2)
     resize_crop = TL.RandomResizedCropLayer(scale=resize_scale, size=image_size[0:2])
+    grayscale_jitter = TL.GrayscaleJitterLayer(brightness=0.4, contrast=0.4, p=0.4)
+    gaussian_blur =     T.GaussianBlur(kernel_size=3)
+
 
     # Transform define #
     if P.dataset == 'imagenet': # Using RandomResizedCrop at PIL transform
@@ -25,6 +28,9 @@ def get_simclr_augmentation(P, image_size):
         )
     elif P.dataset == 'chexpert':
         transform = nn.Sequential(
+            grayscale_jitter,
+            gaussian_blur
+            # resize_crop
         )
     else:
         transform = nn.Sequential(

@@ -99,7 +99,7 @@ class RandomResizedCropLayer(nn.Module):
         output = F.grid_sample(inputs, grid, padding_mode='reflection', **kwargs)
 
         if self.size is not None:
-            output = F.adaptive_avg_pool2d(output, self.size[:-1])
+            output = F.adaptive_avg_pool2d(output, self.size)
 
         return output
 
@@ -319,6 +319,64 @@ class RandomColorGrayLayer(nn.Module):
         return gray
 
 
+class GrayscaleJitterLayer(nn.Module):
+    def __init__(self, p, brightness, contrast):
+        super(GrayscaleJitterLayer, self).__init__()
+        self.prob = p
+        self.brightness = self._check_input(brightness, 'brightness')
+        self.contrast = self._check_input(contrast, 'contrast')
+
+    def _check_input(self, value, name, center=1, bound=(0, float('inf')), clip_first_on_zero=True):
+        if isinstance(value, numbers.Number):
+            if value < 0:
+                raise ValueError("If {} is a single number, it must be non negative.".format(name))
+            value = [center - value, center + value]
+            if clip_first_on_zero:
+                value[0] = max(value[0], 0)
+        elif isinstance(value, (tuple, list)) and len(value) == 2:
+            if not bound[0] <= value[0] <= value[1] <= bound[1]:
+                raise ValueError("{} values should be between {}".format(name, bound))
+        else:
+            raise TypeError("{} should be a single number or a list/tuple with lenght 2.".format(name))
+
+        if value[0] == value[1] == center:
+            value = None
+        return value
+
+    def adjust_contrast(self, x):
+        if self.contrast:
+            factor = x.new_empty(x.size(0), 1, 1, 1).uniform_(*self.contrast)
+            means = torch.mean(x, dim=[2, 3], keepdim=True)
+            x = (x - means) * factor + means
+        return torch.clamp(x, 0, 1)
+
+    def adjust_brightness(self, x):
+        f_v = x.new_ones(x.size(0), 1, 1, 1)
+
+        if self.brightness:
+            f_v = f_v.uniform_(*self.brightness)
+
+        x = x*f_v
+        x = torch.clamp(x, 0, 1)
+        return x
+
+    def transform(self, inputs):
+        # Shuffle transform
+        if np.random.rand() > 0.5:
+            transforms = [self.adjust_contrast, self.adjust_brightness]
+        else:
+            transforms = [self.adjust_brightness, self.adjust_contrast]
+
+        for t in transforms:
+            inputs = t(inputs)
+
+        return inputs
+
+    def forward(self, inputs):
+        _prob = inputs.new_full((inputs.size(0),), self.prob)
+        _mask = torch.bernoulli(_prob).view(-1, 1, 1, 1)
+        return inputs * (1 - _mask) + self.transform(inputs) * _mask
+
 class ColorJitterLayer(nn.Module):
     def __init__(self, p, brightness, contrast, saturation, hue):
         super(ColorJitterLayer, self).__init__()
@@ -385,6 +443,13 @@ class ColorJitterLayer(nn.Module):
         _prob = inputs.new_full((inputs.size(0),), self.prob)
         _mask = torch.bernoulli(_prob).view(-1, 1, 1, 1)
         return inputs * (1 - _mask) + self.transform(inputs) * _mask
+
+class RandomGrayscaleFunction(Function):
+    @staticmethod
+    def forward(ctx, x, f_i):
+        x = x*f_i
+        x = torch.clamp(x, 0, 1)
+        return x
 
 
 class RandomHSVFunction(Function):
