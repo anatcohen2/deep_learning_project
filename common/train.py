@@ -123,8 +123,8 @@ elif P.lr_scheduler == 'step_decay':
 else:
     raise NotImplementedError()
 
-from training.scheduler import GradualWarmupScheduler
-scheduler_warmup = GradualWarmupScheduler(optimizer, multiplier=10.0, total_epoch=P.warmup, after_scheduler=scheduler)
+#from training.scheduler import GradualWarmupScheduler
+#scheduler_warmup = GradualWarmupScheduler(optimizer, multiplier=10.0, total_epoch=P.warmup, after_scheduler=scheduler)
 
 if P.resume_path is not None:
     resume = True
