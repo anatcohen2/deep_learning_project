@@ -22,7 +22,7 @@ def eval_ood_detection(P, model, id_loader, ood_loaders, ood_scores, train_loade
     assert len(ood_scores) == 1  # assume single ood_score for simplicity
     ood_score = ood_scores[0]
 
-    base_path = os.path.split(P.load_path)[0]  # checkpoint directory
+    # base_path = os.path.split(P.load_path)[0]  # checkpoint directory
 
     prefix = f'{P.ood_samples}'
     if P.resize_fix:
@@ -30,16 +30,16 @@ def eval_ood_detection(P, model, id_loader, ood_loaders, ood_scores, train_loade
     else:
         prefix += f'_resize_range_{P.resize_factor}'
 
-    prefix = os.path.join(base_path, f'feats_{prefix}')
+    # prefix = os.path.join(base_path, f'feats_{prefix}')
 
     kwargs = {
         'simclr_aug': simclr_aug,
         'sample_num': P.ood_samples,
-        'layers': P.ood_layer,
+        # 'layers': P.ood_layer,
     }
 
     print('Pre-compute global statistics...')
-    feats_train = get_features(P, f'{P.dataset}_train', model, train_loader, prefix=prefix, **kwargs)  # (M, T, d)
+    feats_train = get_features(P, f'{P.dataset}_train', model, train_loader, prefix='', **kwargs)  # (M, T, d)
 
     P.axis = []
     for f in feats_train['simclr'].chunk(P.K_shift, dim=1):
@@ -147,8 +147,8 @@ def get_features(P, data_name, model, loader, interp=False, prefix='',
                                     simclr_aug, sample_num, layers=left)
 
         for layer, feats in _feats_dict.items():
-            path = prefix + f'_{data_name}_{layer}.pth'
-            torch.save(_feats_dict[layer], path)
+            # path = prefix + f'_{data_name}_{layer}.pth'
+            # torch.save(_feats_dict[layer], path)
             feats_dict[layer] = feats  # update value
 
     return feats_dict

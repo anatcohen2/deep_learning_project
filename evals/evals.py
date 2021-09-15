@@ -1,7 +1,7 @@
 import time
 import itertools
 
-import diffdist.functional as distops
+# import diffdist.functional as distops
 import numpy as np
 import torch
 import torch.distributed as dist
@@ -190,6 +190,7 @@ def compute_ood_score(P, model, ood_score, x, simclr_aug=None):
 
 def get_features(model, simclr_aug, x, layer='simclr', sample_num=1):
     model.eval()
+    layer = layer[0]
 
     feats = []
     for seed in range(sample_num):

@@ -72,13 +72,18 @@ def get_transform(image_size=None):
     # Note: data augmentation is implemented in the layers
     # Hence, we only define the identity transformation here
     if image_size:  # use pre-specified image size
+        if (type(image_size)==int):
+            resize = transforms.Resize((image_size, image_size))
+        else:
+            resize = transforms.Resize((image_size[0], image_size[1]))
+        
         train_transform = transforms.Compose([
-            transforms.Resize((image_size[0], image_size[1])),
+            resize,
             transforms.RandomHorizontalFlip(),
             transforms.ToTensor(),
         ])
         test_transform = transforms.Compose([
-            transforms.Resize((image_size[0], image_size[1])),
+            resize,
             transforms.ToTensor(),
         ])
     else:  # use default image size
@@ -254,7 +259,7 @@ def get_dataset(P, dataset, test_only=False, image_size=None, download=False, ev
         n_classes = 2   # TODO - right now - classes are only no_finding=0/1
         train_set = CheXpertDataset(
             path_to_images=os.path.join(DATA_PATH, 'CheXpert-v1.0-small'),
-            fold='train',
+            fold='valid',
             include_uncertainty=False,
             transform=train_transform,
             sample=P.sample)
