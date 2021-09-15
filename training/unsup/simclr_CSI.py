@@ -29,6 +29,7 @@ def train(P, epoch, model, criterion, optimizer, scheduler, loader, logger=None,
     losses['cls'] = AverageMeter()
     losses['sim'] = AverageMeter()
     losses['shift'] = AverageMeter()
+    grads = AverageMeter()
 
     check = time.time()
     for n, (images, labels) in enumerate(loader):
@@ -90,10 +91,19 @@ def train(P, epoch, model, criterion, optimizer, scheduler, loader, logger=None,
         linear_optim.zero_grad()
         loss_linear.backward()
         linear_optim.step()
+        
+        params_sum=0
+        num_of_params=0
+        for p in model.parameters():
+            if(p.grad is not None):
+                params_sum += abs(p.grad.detach().data).sum()
+                num_of_params += p.grad.detach().data.numel()
+        log_(f'grads_mean={params_sum/num_of_params}')
 
         losses['cls'].update(0, batch_size)
         losses['sim'].update(loss_sim.item(), batch_size)
         losses['shift'].update(loss_shift.item(), batch_size)
+        grads.update(params_sum/num_of_params, batch_size)
 
         if count % 50 == 0:
             log_('[Epoch %3d; %3d] [Time %.3f] [Data %.3f] [LR %.5f]\n'
@@ -112,4 +122,5 @@ def train(P, epoch, model, criterion, optimizer, scheduler, loader, logger=None,
         logger.scalar_summary('train/loss_sim', losses['sim'].average, epoch)
         logger.scalar_summary('train/loss_shift', losses['shift'].average, epoch)
         logger.scalar_summary('train/batch_time', batch_time.average, epoch)
+        logger.scalar_summary('train/gradients', grads.average, epoch)
 

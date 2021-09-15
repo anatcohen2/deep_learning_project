@@ -1,3 +1,5 @@
+import time
+
 def setup(mode, P):
     fname = f'{P.dataset}_{P.model}_unsup_{mode}'
 
@@ -14,6 +16,8 @@ def setup(mode, P):
 
     if P.suffix is not None:
         fname += f'_{P.suffix}'
+    
+    fname += time.strftime("%Y%m%d-%H%M%S")
 
     return train, fname
 
