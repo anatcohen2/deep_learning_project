@@ -36,7 +36,7 @@ def parse_args(default=False):
     parser.add_argument('--save_step', help='Epoch steps to save models',
                         default=10, type=int)
     parser.add_argument('--image_size_input', help='resize photos to this value',
-                        default=256, type=int)
+                        default=32, type=int)
 
     ##### Training Configurations #####
     parser.add_argument('--epochs', help='Epochs',
@@ -50,11 +50,11 @@ def parse_args(default=False):
                         choices=['step_decay', 'cosine'],
                         default='cosine', type=str)
     parser.add_argument('--warmup', help='Warm-up epochs',
-                        default=10, type=int)
+                        default=0, type=int)
     parser.add_argument('--lr_init', help='Initial learning rate',
-                        default=1e-1, type=float)
+                        default=1e-3, type=float)
     parser.add_argument('--weight_decay', help='Weight decay',
-                        default=1e-6, type=float)
+                        default=0, type=float)
     parser.add_argument('--batch_size', help='Batch size',
                         default=128, type=int)
     parser.add_argument('--test_batch_size', help='Batch size for test loader',
