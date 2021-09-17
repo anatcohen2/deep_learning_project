@@ -73,19 +73,23 @@ def get_transform(image_size=None):
     # Hence, we only define the identity transformation here
     if image_size:  # use pre-specified image size
         train_transform = transforms.Compose([
-            transforms.Resize((image_size[0], image_size[1])),
+            transforms.Resize((image_size, image_size)),
             transforms.RandomHorizontalFlip(),
             transforms.ToTensor(),
         ])
         test_transform = transforms.Compose([
-            transforms.Resize((image_size[0], image_size[1])),
+            transforms.Resize((image_size, image_size)),
             transforms.ToTensor(),
         ])
     else:  # use default image size
         train_transform = transforms.Compose([
+            transforms.Grayscale(num_output_channels=1),
             transforms.ToTensor(),
         ])
-        test_transform = transforms.ToTensor()
+        test_transform = transforms.Compose([
+            transforms.Grayscale(num_output_channels=1),
+            transforms.ToTensor(),
+        ])
 
     return train_transform, test_transform
 
@@ -125,7 +129,7 @@ def get_transform_imagenet():
     return train_transform, test_transform
 
 
-def get_transform_chexpert(size=320):
+def get_transform_chexpert(size):
 
     train_transform = transforms.Compose([
         transforms.RandomEqualize(p=1.0),
@@ -157,7 +161,7 @@ def get_dataset(P, dataset, test_only=False, image_size=None, download=False, ev
         train_transform, test_transform = get_transform(image_size=image_size)
 
     if dataset == 'cifar10':
-        image_size = (32, 32, 3)
+        image_size = (32, 32, 1)
         n_classes = 10
         train_set = datasets.CIFAR10(DATA_PATH, train=True, download=download, transform=train_transform)
         test_set = datasets.CIFAR10(DATA_PATH, train=False, download=download, transform=test_transform)
@@ -259,6 +263,7 @@ def get_dataset(P, dataset, test_only=False, image_size=None, download=False, ev
             transform=train_transform,
             sample=P.sample)
 
+        # image, label = train_set.__getitem__(1)
         test_set = CheXpertDataset(
             path_to_images=os.path.join(DATA_PATH, 'CheXpert-v1.0-small'),
             fold='valid',
