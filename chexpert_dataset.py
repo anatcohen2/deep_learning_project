@@ -35,7 +35,7 @@ class CheXpertDataset(Dataset):
         if(sample > 0 and sample < len(self.df)):
             self.df = self.df.sample(sample)
 
-        self.targets = self.df['No Finding'].values
+        self.targets = 1 - self.df['No Finding'].values
 
         if not finding == "any":  # can filter for positive findings of the kind described; useful for evaluation
             if finding in self.df.columns:
@@ -74,13 +74,13 @@ class CheXpertDataset(Dataset):
         image = Image.open(os.path.join(self.path_to_images, self.df.index[idx]))
         # image = image.convert('RGB')
 
-        labels = np.zeros(len(self.PRED_LABEL), dtype=int)
-        for i in range(0, len(self.PRED_LABEL)):
-            # can leave zero if zero, else make one
-            if self.df[self.PRED_LABEL[i].strip()].iloc[idx].astype('int') >= -1:
-                labels[i] = self.df[self.PRED_LABEL[i].strip()].iloc[idx].astype('int')
+        # labels = np.zeros(len(self.PRED_LABEL), dtype=int)
+        # for i in range(0, len(self.PRED_LABEL)):
+        #     # can leave zero if zero, else make one
+        #     if self.df[self.PRED_LABEL[i].strip()].iloc[idx].astype('int') >= -1:
+        #         labels[i] = self.df[self.PRED_LABEL[i].strip()].iloc[idx].astype('int')
 
-        label = np.array(labels[0])   # only No finding
+        label = np.array(self.targets[idx])   # only No finding
 
         if self.transform:
             image = self.transform(image)
