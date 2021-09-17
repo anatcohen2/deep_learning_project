@@ -72,7 +72,7 @@ def train(P, epoch, model, criterion, optimizer, scheduler, loader, logger=None,
         loss.backward()
         optimizer.step()
 
-        scheduler.step(epoch - 1 + n / len(loader))
+        # scheduler.step(epoch - 1 + n / len(loader))
         lr = optimizer.param_groups[0]['lr']
 
         batch_time.update(time.time() - check)
@@ -98,7 +98,7 @@ def train(P, epoch, model, criterion, optimizer, scheduler, loader, logger=None,
             if(p.grad is not None):
                 params_sum += abs(p.grad.detach().data).sum()
                 num_of_params += p.grad.detach().data.numel()
-        log_(f'grads_mean={params_sum/num_of_params}')
+        # log_(f'grads_mean={params_sum/num_of_params}')
 
         losses['cls'].update(0, batch_size)
         losses['sim'].update(loss_sim.item(), batch_size)
@@ -106,8 +106,8 @@ def train(P, epoch, model, criterion, optimizer, scheduler, loader, logger=None,
         grads.update(params_sum/num_of_params, batch_size)
 
         if count % 50 == 0:
-            log_('[Epoch %3d; %3d] [Time %.3f] [Data %.3f] [LR %.5f]\n'
-                'total_samples=%3d, count=%3d, n=%3d, gpus=%3d\n'
+            log_('[Epoch %3d; %3d] [Time %.3f] [Data %.3f] [LR %.5f]\t'
+                'total_samples=%3d, count=%3d, n=%3d, gpus=%3d\t'
                  '[LossC %f] [LossSim %f] [LossShift %f]' %
                  (epoch, count, batch_time.value, data_time.value, lr,
                      count*batch_size, count, n, P.n_gpus,
