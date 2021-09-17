@@ -26,11 +26,11 @@ def get_simclr_augmentation(P, image_size):
             color_jitter,
             color_gray,
         )
-    elif P.dataset == 'chexpert':
+    elif P.dataset == 'chexpert' or P.dataset == 'cifar10':
         transform = nn.Sequential(
             grayscale_jitter,
-            gaussian_blur
-            # resize_crop
+            gaussian_blur,
+            resize_crop
         )
     else:
         transform = nn.Sequential(
