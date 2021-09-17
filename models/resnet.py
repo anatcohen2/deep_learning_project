@@ -170,7 +170,7 @@ class ResNet(BaseModel):
         out = self.layer4(out)
         out_list.append(out)
 
-        out = F.avg_pool2d(out, 4)
+        out = F.avg_pool2d(out, out.shape[-1])
         out = out.view(out.size(0), -1)
 
         if all_features:
