@@ -22,3 +22,5 @@ data/
 *.pth
 
 *.linear_optim
+
+*.zip
