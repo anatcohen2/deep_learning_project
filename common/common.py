@@ -25,7 +25,9 @@ def parse_args(default=False):
                         default=0, help='Local rank for distributed learning')
     parser.add_argument('--resume_path', help='Path to the resume checkpoint',
                         default=None, type=str)
-    parser.add_argument('--load_path', help='Path to the loading checkpoint',
+    parser.add_argument('--load_path_frontal', help='Path to the loading checkpoint',
+                        default=None, type=str)
+    parser.add_argument('--load_path_lateral', help='Path to the loading checkpoint',
                         default=None, type=str)
     parser.add_argument("--no_strict", help='Do not strictly load state_dicts',
                         action='store_true')

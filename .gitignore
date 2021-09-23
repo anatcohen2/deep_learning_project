@@ -24,3 +24,7 @@ data/
 *.linear_optim
 
 *.zip
+
+*.pkl
+
+logs/chexpert_resnet18_unsup_simclr_CSI_shift_rotation_one_class_epoch_128/archive/version
