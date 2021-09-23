@@ -47,7 +47,7 @@ class CheXpertDataset(Dataset):
                 print("cannot filter on finding " + finding +
                       " as not in data - please check spelling")
 
-        self.df = self.df.set_index("Path")
+        # self.df = self.df.set_index("Path")
         self.PRED_LABEL = [
             'No Finding',
             'Enlarged Cardiomediastinum',
