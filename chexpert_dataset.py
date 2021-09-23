@@ -71,7 +71,7 @@ class CheXpertDataset(Dataset):
 
     def __getitem__(self, idx):
 
-        image = Image.open(os.path.join(self.path_to_images, self.df.index[idx]))
+        image = Image.open(os.path.join(self.path_to_images, self.df['Path'][idx]))
         # image = image.convert('RGB')
 
         # labels = np.zeros(len(self.PRED_LABEL), dtype=int)
