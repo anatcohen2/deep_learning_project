@@ -28,8 +28,8 @@ elif P.mode in ['ood', 'ood_pre']:
     if P.one_class_idx is not None:
         mean_dict = {'frontal': dict(), 'lateral': dict(), 'combined': dict()}
         for ood_score in P.ood_score:
-            mean = 0
             for type in auroc_dict.keys():
+                mean = 0
                 for ood in auroc_dict[type].keys():
                     mean += auroc_dict[type][ood][ood_score]
                 mean_dict[type][ood_score] = mean / len(auroc_dict[type].keys())
