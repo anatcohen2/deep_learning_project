@@ -14,15 +14,18 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 hflip = TL.HorizontalFlipLayer().to(device)
 
 
-def eval_ood_detection(P, model, id_loader, ood_loaders, ood_scores, train_loader=None, simclr_aug=None):
-    auroc_dict = dict()
+def eval_ood_detection(P, model_frontal, model_lateral, id_loader, ood_loaders, ood_scores, train_loader_frontal=None,
+                       train_loader_lateral=None, simclr_aug=None):
+    auroc_dict = {'frontal': {}, 'lateral': {}, 'combined': {}}
     for ood in ood_loaders.keys():
-        auroc_dict[ood] = dict()
+        auroc_dict['frontal'][ood] = dict()
+        auroc_dict['lateral'][ood] = dict()
+        auroc_dict['combined'][ood] = dict()
 
     assert len(ood_scores) == 1  # assume single ood_score for simplicity
     ood_score = ood_scores[0]
 
-    base_path = os.path.split(P.load_path)[0]  # checkpoint directory
+    base_path = os.path.split(P.load_path_frontal)[0]  # checkpoint directory
 
     prefix = f'{P.ood_samples}'
     if P.resize_fix:
@@ -39,72 +42,128 @@ def eval_ood_detection(P, model, id_loader, ood_loaders, ood_scores, train_loade
     }
 
     print('Pre-compute global statistics...')
-    feats_train = get_features(P, f'{P.dataset}_train', model, train_loader, prefix=prefix, **kwargs)  # (M, T, d)
+    feats_train_frontal = get_features(P, f'{P.dataset}_train_frontal', model_frontal, train_loader_frontal,
+                                       prefix=prefix, **kwargs)  # (M, T, d)
+    feats_train_lateral = get_features(P, f'{P.dataset}_train_lateral', model_lateral, train_loader_lateral,
+                                       prefix=prefix, **kwargs)  # (M, T, d)
 
-    P.axis = []
-    for f in feats_train['simclr'].chunk(P.K_shift, dim=1):
-        axis = f.mean(dim=1)  # (M, d)
-        P.axis.append(normalize(axis, dim=1).to(device))
-    print('axis size: ' + ' '.join(map(lambda x: str(len(x)), P.axis)))
+    P.axis = {'frontal': [], 'lateral': []}
 
-    f_sim = [f.mean(dim=1) for f in feats_train['simclr'].chunk(P.K_shift, dim=1)]  # list of (M, d)
-    f_shi = [f.mean(dim=1) for f in feats_train['shift'].chunk(P.K_shift, dim=1)]  # list of (M, 4)
+    for i in range(P.K_shift):
+        # frontal
+        f_frontal = feats_train_frontal['simclr'].chunk(P.K_shift, dim=1)[i]
+        axis = f_frontal.mean(dim=1)  # (M, d)
+        P.axis['frontal'].append(normalize(axis, dim=1).to(device))
 
-    weight_sim = []
-    weight_shi = []
+        # lateral
+        f_lateral = feats_train_lateral['simclr'].chunk(P.K_shift, dim=1)[i]
+        axis = f_lateral.mean(dim=1)  # (M, d)
+        P.axis['lateral'].append(normalize(axis, dim=1).to(device))
+
+    print('Frontal axis size: ' + ' '.join(map(lambda x: str(len(x)), P.axis['frontal'])))
+    print('Lateral axis size: ' + ' '.join(map(lambda x: str(len(x)), P.axis['lateral'])))
+
+    f_sim_frontal = [f.mean(dim=1) for f in feats_train_frontal['simclr'].chunk(P.K_shift, dim=1)]  # list of (M, d)
+    f_shi_frontal = [f.mean(dim=1) for f in feats_train_frontal['shift'].chunk(P.K_shift, dim=1)]  # list of (M, 4)
+
+    f_sim_lateral = [f.mean(dim=1) for f in feats_train_lateral['simclr'].chunk(P.K_shift, dim=1)]  # list of (M, d)
+    f_shi_lateral = [f.mean(dim=1) for f in feats_train_lateral['shift'].chunk(P.K_shift, dim=1)]  # list of (M, 4)
+
+    weight_sim_frontal = []
+    weight_shi_frontal = []
+    weight_sim_lateral = []
+    weight_shi_lateral = []
+
     for shi in range(P.K_shift):
-        sim_norm = f_sim[shi].norm(dim=1)  # (M)
-        shi_mean = f_shi[shi][:, shi]  # (M)
-        weight_sim.append(1 / sim_norm.mean().item())
-        weight_shi.append(1 / shi_mean.mean().item())
+        sim_norm = f_sim_frontal[shi].norm(dim=1)  # (M)
+        shi_mean = f_shi_frontal[shi][:, shi]  # (M)
+        weight_sim_frontal.append(1 / sim_norm.mean().item())
+        weight_shi_frontal.append(1 / shi_mean.mean().item())
+
+        sim_norm = f_sim_lateral[shi].norm(dim=1)  # (M)
+        shi_mean = f_shi_lateral[shi][:, shi]  # (M)
+        weight_sim_lateral.append(1 / sim_norm.mean().item())
+        weight_shi_lateral.append(1 / shi_mean.mean().item())
 
     if ood_score == 'simclr':
         P.weight_sim = [1]
         P.weight_shi = [0]
     elif ood_score == 'CSI':
-        P.weight_sim = weight_sim
-        P.weight_shi = weight_shi
+        P.weight_sim = {'frontal': weight_sim_frontal, 'lateral': weight_sim_lateral}
+        P.weight_shi = {'frontal': weight_shi_frontal, 'lateral': weight_shi_lateral}
     else:
         raise ValueError()
 
-    print(f'weight_sim:\t' + '\t'.join(map('{:.4f}'.format, P.weight_sim)))
-    print(f'weight_shi:\t' + '\t'.join(map('{:.4f}'.format, P.weight_shi)))
+    print(f'Frontal weight_sim:\t' + '\t'.join(map('{:.4f}'.format, P.weight_sim['frontal'])))
+    print(f'Frontal weight_shi:\t' + '\t'.join(map('{:.4f}'.format, P.weight_shi['frontal'])))
+    print(f'Lateral weight_sim:\t' + '\t'.join(map('{:.4f}'.format, P.weight_sim['lateral'])))
+    print(f'Lateral weight_shi:\t' + '\t'.join(map('{:.4f}'.format, P.weight_shi['lateral'])))
 
     print('Pre-compute features...')
-    feats_id = get_features(P, P.dataset, model, id_loader, prefix=prefix, **kwargs)  # (N, T, d)
-    feats_ood = dict()
+    feats_id_frontal = get_features(P, P.dataset, model_frontal, id_loader, prefix=prefix, **kwargs)  # (N, T, d)
+    feats_id_lateral = get_features(P, P.dataset, model_lateral, id_loader, prefix=prefix, **kwargs)  # (N, T, d)
+
+    feats_ood = {'frontal': {}, 'lateral': {}}
     for ood, ood_loader in ood_loaders.items():
         if ood == 'interp':
             feats_ood[ood] = get_features(P, ood, model, id_loader, interp=True, prefix=prefix, **kwargs)
         else:
-            feats_ood[ood] = get_features(P, ood, model, ood_loader, prefix=prefix, **kwargs)
+            feats_ood['frontal'][ood] = get_features(P, ood, model_frontal, ood_loader, prefix=prefix, **kwargs)
+            feats_ood['lateral'][ood] = get_features(P, ood, model_lateral, ood_loader, prefix=prefix, **kwargs)
 
     print(f'Compute OOD scores... (score: {ood_score})')
-    scores_id = get_scores(P, feats_id, ood_score).numpy()
-    scores_ood = dict()
-    if P.one_class_idx is not None:
-        one_class_score = []
+    scores_id_frontal = get_scores(P, feats_id_frontal, ood_score, type='frontal').numpy()
+    scores_id_lateral = get_scores(P, feats_id_lateral, ood_score, type='lateral').numpy()
 
-    for ood, feats in feats_ood.items():
-        scores_ood[ood] = get_scores(P, feats, ood_score).numpy()
-        auroc_dict[ood][ood_score] = get_auroc(scores_id, scores_ood[ood])
-        if P.one_class_idx is not None:
-            one_class_score.append(scores_ood[ood])
-
+    scores_ood = {'frontal': {}, 'lateral': {}, 'combined': {}}
     if P.one_class_idx is not None:
-        one_class_score = np.concatenate(one_class_score)
-        one_class_total = get_auroc(scores_id, one_class_score)
-        print(f'One_class_real_mean: {one_class_total}')
+        one_class_score_frontal = []
+        one_class_score_lateral = []
+        one_class_score_combined = []
+
+    for ood in ood_loaders.keys():
+        feats = feats_ood['frontal'][ood]
+        scores_ood['frontal'][ood] = get_scores(P, feats, ood_score, type='frontal').numpy()
+
+        feats = feats_ood['lateral'][ood]
+        scores_ood['lateral'][ood] = get_scores(P, feats, ood_score, type='lateral').numpy()
+
+        auroc_dict['frontal'][ood][ood_score] = get_auroc(scores_id_frontal, scores_ood['frontal'][ood])
+        auroc_dict['lateral'][ood][ood_score] = get_auroc(scores_id_lateral, scores_ood['lateral'][ood])
+
+        combind_scores_id = np.vstack((scores_id_frontal, scores_id_lateral)).mean(axis=0)
+        scores_ood['combined'][ood] = np.vstack((scores_ood['frontal'][ood], scores_ood['lateral'][ood])).mean(axis=0)
+        auroc_dict['combined'][ood][ood_score] = get_auroc(combind_scores_id, scores_ood['combined'][ood])
+
+        # if P.one_class_idx is not None:
+        #     one_class_score_frontal.append(scores_ood['frontal'][ood])
+        #     one_class_score_lateral.append(scores_ood['lateral'][ood])
+        #     one_class_score_combined.append(scores_ood['combined'][ood])
+
+    # if P.one_class_idx is not None:
+        # one_class_score = np.concatenate(one_class_score)
+        # one_class_total = get_auroc(scores_id, one_class_score)
+        # print(f'One_class_real_mean: {one_class_total}')
 
     if P.print_score:
-        print_score(P.dataset, scores_id)
-        for ood, scores in scores_ood.items():
+        print_score(P.dataset, scores_id_frontal)
+        print_score(P.dataset, scores_id_lateral)
+        print_score(P.dataset, combind_scores_id)
+
+        for ood in ood_loaders.keys():
+            scores = scores_ood['frontal'][ood]
+            print_score(ood, scores)
+
+            scores = scores_ood['lateral'][ood]
+            print_score(ood, scores)
+
+            scores = scores_ood['combined'][ood]
             print_score(ood, scores)
 
     return auroc_dict
 
 
-def get_scores(P, feats_dict, ood_score):
+def get_scores(P, feats_dict, ood_score, type):
     # convert to gpu tensor
     feats_sim = feats_dict['simclr'].to(device)
     feats_shi = feats_dict['shift'].to(device)
@@ -117,8 +176,8 @@ def get_scores(P, feats_dict, ood_score):
         f_shi = [f.mean(dim=0, keepdim=True) for f in f_shi.chunk(P.K_shift)]  # list of (1, 4)
         score = 0
         for shi in range(P.K_shift):
-            score += (f_sim[shi] * P.axis[shi]).sum(dim=1).max().item() * P.weight_sim[shi]
-            score += f_shi[shi][:, shi].item() * P.weight_shi[shi]
+            score += (f_sim[shi] * P.axis[type][shi]).sum(dim=1).max().item() * P.weight_sim[type][shi]
+            score += f_shi[shi][:, shi].item() * P.weight_shi[type][shi]
         score = score / P.K_shift
         scores.append(score)
     scores = torch.tensor(scores)
