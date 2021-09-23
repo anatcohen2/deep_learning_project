@@ -25,7 +25,7 @@ ood_eval = P.mode == 'ood_pre'
 if P.dataset == 'imagenet' and ood_eval:
     P.batch_size = 1
     P.test_batch_size = 1
-train_set, test_set, image_size, n_classes = get_dataset(P, dataset=P.dataset, eval=ood_eval, image_size=P.image_size_input)
+train_set_frontal, train_set_lateral, test_set, image_size, n_classes = get_dataset(P, dataset=P.dataset, eval=ood_eval, image_size=P.image_size_input)
 
 P.image_size = image_size
 P.n_classes = n_classes
@@ -35,12 +35,14 @@ if P.one_class_idx is not None:
     P.n_superclasses = len(cls_list)
 
     full_test_set = deepcopy(test_set)  # test set of full classes
-    train_set = get_subclass_dataset(train_set, classes=cls_list[P.one_class_idx])
+    train_set_frontal = get_subclass_dataset(train_set_frontal, classes=cls_list[P.one_class_idx])
+    train_set_lateral = get_subclass_dataset(train_set_lateral, classes=cls_list[P.one_class_idx])
     test_set = get_subclass_dataset(test_set, classes=cls_list[P.one_class_idx])
 
 kwargs = {'pin_memory': False, 'num_workers': 0}
 
-train_loader = DataLoader(train_set, shuffle=True, batch_size=P.batch_size, **kwargs)
+train_loader_frontal = DataLoader(train_set_frontal, shuffle=True, batch_size=P.batch_size, **kwargs)
+train_loader_lateral = DataLoader(train_set_lateral, shuffle=True, batch_size=P.batch_size, **kwargs)
 test_loader = DataLoader(test_set, shuffle=False, batch_size=P.test_batch_size, **kwargs)
 
 if P.ood_dataset is None:
@@ -72,13 +74,21 @@ simclr_aug = C.get_simclr_augmentation(P, image_size=P.image_size).to(device)
 P.shift_trans, P.K_shift = C.get_shift_module(P, eval=True)
 P.shift_trans = P.shift_trans.to(device)
 
-model = C.get_classifier(P.model, n_classes=P.n_classes).to(device)
+model_frontal = C.get_classifier(P.model, n_classes=P.n_classes).to(device)
+model_lateral = C.get_classifier(P.model, n_classes=P.n_classes).to(device)
 if P.dataset == 'chexpert' or P.dataset == 'cifar10':
-    model.conv1 = conv3x3(1, 64)
+    model_frontal.conv1 = conv3x3(1, 64)
+    model_lateral.conv1 = conv3x3(1, 64)
 
-model = C.get_shift_classifer(model, P.K_shift).to(device)
+model_frontal = C.get_shift_classifer(model_frontal, P.K_shift).to(device)
+model_lateral = C.get_shift_classifer(model_lateral, P.K_shift).to(device)
+
 criterion = nn.CrossEntropyLoss().to(device)
 
-if P.load_path is not None:
-    checkpoint = torch.load(P.load_path)
-    model.load_state_dict(checkpoint, strict=not P.no_strict)
+if P.load_path_frontal is not None:
+    checkpoint = torch.load(P.load_path_frontal)
+    model_frontal.load_state_dict(checkpoint, strict=not P.no_strict)
+
+if P.load_path_lateral is not None:
+    checkpoint = torch.load(P.load_path_lateral)
+    model_lateral.load_state_dict(checkpoint, strict=not P.no_strict)
