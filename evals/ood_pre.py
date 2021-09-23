@@ -9,6 +9,8 @@ import numpy as np
 import models.transform_layers as TL
 from utils.utils import set_random_seed, normalize
 from evals.evals import get_auroc
+from torch.utils.data.dataset import Subset
+from torch.utils.data import DataLoader
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 hflip = TL.HorizontalFlipLayer().to(device)
@@ -100,32 +102,73 @@ def eval_ood_detection(P, model_frontal, model_lateral, id_loader, ood_loaders, 
     print(f'Lateral weight_shi:\t' + '\t'.join(map('{:.4f}'.format, P.weight_shi['lateral'])))
 
     print('Pre-compute features...')
-    feats_id_frontal = get_features(P, P.dataset, model_frontal, id_loader, prefix=prefix, **kwargs)  # (N, T, d)
-    feats_id_lateral = get_features(P, P.dataset, model_lateral, id_loader, prefix=prefix, **kwargs)  # (N, T, d)
+    feats_id_lateral = {'simclr': torch.Tensor(), 'shift': torch.Tensor()}
+    feats_id_frontal = {'simclr': torch.Tensor(), 'shift': torch.Tensor()}
 
-    feats_ood = {'frontal': {}, 'lateral': {}}
+    id_df = id_loader.dataset.dataset.df.iloc[id_loader.dataset.indices].copy()
+    first_idx = id_df.index.min()
+    patients_list = id_df['patient'].unique().tolist()
+    for patient in patients_list:
+        # frontal
+        frontal = id_df[(id_df['patient'] == patient) & (id_df['Frontal/Lateral'] == 'Frontal')]
+        dataset = Subset(id_loader.dataset, [frontal.index[0] - first_idx])
+        id_sub_loader = DataLoader(dataset, shuffle=True, batch_size=P.batch_size, pin_memory=False, num_workers=0)
+        current_feats_id_frontal = get_features(P, P.dataset, model_frontal, id_sub_loader, prefix=prefix, **kwargs)  # (N, T, d)
+        feats_id_frontal['simclr'] = torch.cat((feats_id_frontal['simclr'], current_feats_id_frontal['simclr']))
+        feats_id_frontal['shift'] = torch.cat((feats_id_frontal['shift'], current_feats_id_frontal['shift']))
+
+        # lateral
+        lateral = id_df[(id_df['patient'] == patient) & (id_df['Frontal/Lateral'] == 'Lateral')]
+        dataset = Subset(id_loader.dataset, [lateral.index[0] - first_idx])
+        id_sub_loader = DataLoader(dataset, shuffle=True, batch_size=P.batch_size, pin_memory=False, num_workers=0)
+        current_feats_id_lateral = get_features(P, P.dataset, model_lateral, id_sub_loader, prefix=prefix, **kwargs)  # (N, T, d)
+        feats_id_lateral['simclr'] = torch.cat((feats_id_lateral['simclr'], current_feats_id_lateral['simclr']))
+        feats_id_lateral['shift'] = torch.cat((feats_id_lateral['shift'], current_feats_id_lateral['shift']))
+
+    feats_ood_frontal = dict((el, {'simclr': torch.Tensor(), 'shift': torch.Tensor()}) for el in ood_loaders.keys())
+    feats_ood_lateral = dict((el, {'simclr': torch.Tensor(), 'shift': torch.Tensor()}) for el in ood_loaders.keys())
+
     for ood, ood_loader in ood_loaders.items():
         if ood == 'interp':
             feats_ood[ood] = get_features(P, ood, model, id_loader, interp=True, prefix=prefix, **kwargs)
         else:
-            feats_ood['frontal'][ood] = get_features(P, ood, model_frontal, ood_loader, prefix=prefix, **kwargs)
-            feats_ood['lateral'][ood] = get_features(P, ood, model_lateral, ood_loader, prefix=prefix, **kwargs)
+            ood_df = ood_loader.dataset.dataset.df.iloc[ood_loader.dataset.indices].copy()
+            first_idx = ood_df.index.min()
+            patients_list = ood_df['patient'].unique().tolist()
+            for patient in patients_list:
+                # frontal
+                frontal = ood_df[(ood_df['patient'] == patient) & (ood_df['Frontal/Lateral'] == 'Frontal')]
+                dataset = Subset(ood_loader.dataset, [frontal.index[0] - first_idx])
+                ood_sub_loader = DataLoader(dataset, shuffle=True, batch_size=P.batch_size, pin_memory=False,
+                                            num_workers=0)
+                current_feats_ood_frontal = get_features(P, ood, model_frontal, ood_sub_loader, prefix=prefix, **kwargs)
+                feats_ood_frontal[ood]['simclr'] = torch.cat((feats_ood_frontal[ood]['simclr'], current_feats_ood_frontal['simclr']))
+                feats_ood_frontal[ood]['shift'] = torch.cat((feats_ood_frontal[ood]['shift'], current_feats_id_frontal['shift']))
+
+                # lateral
+                lateral = ood_df[(ood_df['patient'] == patient) & (ood_df['Frontal/Lateral'] == 'Lateral')]
+                dataset = Subset(ood_loader.dataset, [lateral.index[0] - first_idx])
+                ood_sub_loader = DataLoader(dataset, shuffle=True, batch_size=P.batch_size, pin_memory=False,
+                                            num_workers=0)
+                current_feats_ood_lateral = get_features(P, ood, model_lateral, ood_sub_loader, prefix=prefix, **kwargs)
+                feats_ood_lateral[ood]['simclr'] = torch.cat((feats_ood_lateral[ood]['simclr'], current_feats_ood_lateral['simclr']))
+                feats_ood_lateral[ood]['shift'] = torch.cat((feats_ood_lateral[ood]['shift'], current_feats_ood_lateral['shift']))
 
     print(f'Compute OOD scores... (score: {ood_score})')
     scores_id_frontal = get_scores(P, feats_id_frontal, ood_score, type='frontal').numpy()
     scores_id_lateral = get_scores(P, feats_id_lateral, ood_score, type='lateral').numpy()
 
     scores_ood = {'frontal': {}, 'lateral': {}, 'combined': {}}
-    if P.one_class_idx is not None:
-        one_class_score_frontal = []
-        one_class_score_lateral = []
-        one_class_score_combined = []
+    # if P.one_class_idx is not None:
+        # one_class_score_frontal = []
+        # one_class_score_lateral = []
+        # one_class_score_combined = []
 
     for ood in ood_loaders.keys():
-        feats = feats_ood['frontal'][ood]
+        feats = feats_ood_frontal[ood]
         scores_ood['frontal'][ood] = get_scores(P, feats, ood_score, type='frontal').numpy()
 
-        feats = feats_ood['lateral'][ood]
+        feats = feats_ood_lateral[ood]
         scores_ood['lateral'][ood] = get_scores(P, feats, ood_score, type='lateral').numpy()
 
         auroc_dict['frontal'][ood][ood_score] = get_auroc(scores_id_frontal, scores_ood['frontal'][ood])
