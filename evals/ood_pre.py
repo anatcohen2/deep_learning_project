@@ -143,7 +143,7 @@ def eval_ood_detection(P, model_frontal, model_lateral, id_loader, ood_loaders, 
                                             num_workers=0)
                 current_feats_ood_frontal = get_features(P, ood, model_frontal, ood_sub_loader, prefix=prefix, **kwargs)
                 feats_ood_frontal[ood]['simclr'] = torch.cat((feats_ood_frontal[ood]['simclr'], current_feats_ood_frontal['simclr']))
-                feats_ood_frontal[ood]['shift'] = torch.cat((feats_ood_frontal[ood]['shift'], current_feats_id_frontal['shift']))
+                feats_ood_frontal[ood]['shift'] = torch.cat((feats_ood_frontal[ood]['shift'], current_feats_ood_frontal['shift']))
 
                 # lateral
                 lateral = ood_df[(ood_df['patient'] == patient) & (ood_df['Frontal/Lateral'] == 'Lateral')]
