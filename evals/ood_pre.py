@@ -8,7 +8,7 @@ import numpy as np
 
 import models.transform_layers as TL
 from utils.utils import set_random_seed, normalize
-from evals.evals import get_auroc
+from evals.evals import get_auroc, get_roc
 from torch.utils.data.dataset import Subset
 from torch.utils.data import DataLoader
 
@@ -19,10 +19,14 @@ hflip = TL.HorizontalFlipLayer().to(device)
 def eval_ood_detection(P, model_frontal, model_lateral, id_loader, ood_loaders, ood_scores, train_loader_frontal=None,
                        train_loader_lateral=None, simclr_aug=None):
     auroc_dict = {'frontal': {}, 'lateral': {}, 'combined': {}}
+    roc_dict = {'frontal': {}, 'lateral': {}, 'combined': {}}
     for ood in ood_loaders.keys():
         auroc_dict['frontal'][ood] = dict()
         auroc_dict['lateral'][ood] = dict()
         auroc_dict['combined'][ood] = dict()
+        roc_dict['frontal'][ood] = dict()
+        roc_dict['lateral'][ood] = dict()
+        roc_dict['combined'][ood] = dict()
 
     assert len(ood_scores) == 1  # assume single ood_score for simplicity
     ood_score = ood_scores[0]
@@ -173,10 +177,13 @@ def eval_ood_detection(P, model_frontal, model_lateral, id_loader, ood_loaders, 
 
         auroc_dict['frontal'][ood][ood_score] = get_auroc(scores_id_frontal, scores_ood['frontal'][ood])
         auroc_dict['lateral'][ood][ood_score] = get_auroc(scores_id_lateral, scores_ood['lateral'][ood])
+        roc_dict['frontal'][ood][ood_score] = get_roc(scores_id_frontal, scores_ood['frontal'][ood])
+        roc_dict['lateral'][ood][ood_score] = get_roc(scores_id_lateral, scores_ood['lateral'][ood])
 
         combind_scores_id = np.vstack((scores_id_frontal, scores_id_lateral)).mean(axis=0)
         scores_ood['combined'][ood] = np.vstack((scores_ood['frontal'][ood], scores_ood['lateral'][ood])).mean(axis=0)
         auroc_dict['combined'][ood][ood_score] = get_auroc(combind_scores_id, scores_ood['combined'][ood])
+        roc_dict['combined'][ood][ood_score] = get_roc(combind_scores_id, scores_ood['combined'][ood])
 
         # if P.one_class_idx is not None:
         #     one_class_score_frontal.append(scores_ood['frontal'][ood])
@@ -203,7 +210,7 @@ def eval_ood_detection(P, model_frontal, model_lateral, id_loader, ood_loaders, 
             scores = scores_ood['combined'][ood]
             print_score(ood, scores)
 
-    return auroc_dict
+    return auroc_dict, roc_dict
 
 
 def get_scores(P, feats_dict, ood_score, type):

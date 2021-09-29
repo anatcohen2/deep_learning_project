@@ -1,4 +1,5 @@
 from common.eval import *
+from matplotlib import pyplot as plt
 
 model_frontal.eval()
 model_lateral.eval()
@@ -20,7 +21,7 @@ elif P.mode in ['ood', 'ood_pre']:
         from evals.ood_pre import eval_ood_detection
 
     with torch.no_grad():
-        auroc_dict = eval_ood_detection(P, model_frontal=model_frontal, model_lateral=model_lateral,
+        auroc_dict, roc_dict = eval_ood_detection(P, model_frontal=model_frontal, model_lateral=model_lateral,
                                         id_loader=test_loader, ood_loaders=ood_test_loader, ood_scores=P.ood_score,
                                         train_loader_frontal=train_loader_frontal,
                                         train_loader_lateral=train_loader_lateral, simclr_aug=simclr_aug)
@@ -44,6 +45,22 @@ elif P.mode in ['ood', 'ood_pre']:
                 message += '[%s %s %.4f] ' % (ood, ood_score, auroc)
                 if auroc > best_auroc:
                     best_auroc = auroc
+
+            for ood_score, roc in roc_dict[type][ood].items():
+                plt.figure()
+                fpr = roc_dict[ood][ood_score][0]
+                tpr = roc_dict[ood][ood_score][1]
+                plt.plot(fpr, tpr, color='darkorange', lw=2)
+                plt.plot([0, 1], [0, 1], color='navy', lw=2, linestyle='--')
+                plt.xlim([0.0, 1.0])
+                plt.ylim([0.0, 1.05])
+                plt.xlabel('False Positive Rate')
+                plt.ylabel('True Positive Rate')
+                plt.title('ROC')
+                plt.legend(loc="lower right")
+                plt.savefig(f'roc_curve_{type}_{ood}_{ood_score}.png')
+                print(f'saved roc_curve_{type}_{ood}_{ood_score}.png')
+
             message += '[%s %s %.4f] ' % (ood, 'best', best_auroc)
             if P.print_score:
                 print(message)

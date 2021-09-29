@@ -7,7 +7,7 @@ import torch
 import torch.distributed as dist
 import torch.nn as nn
 import torch.nn.functional as F
-from sklearn.metrics import roc_auc_score
+from sklearn.metrics import roc_auc_score, roc_curve
 
 import models.transform_layers as TL
 from utils.temperature_scaling import _ECELoss
@@ -147,6 +147,10 @@ def get_auroc(scores_id, scores_ood):
     labels = np.concatenate([np.ones_like(scores_id), np.zeros_like(scores_ood)])
     return roc_auc_score(labels, scores)
 
+def get_roc(scores_id, scores_ood):
+    scores = np.concatenate([scores_id, scores_ood])
+    labels = np.concatenate([np.ones_like(scores_id), np.zeros_like(scores_ood)])
+    return roc_curve(labels, scores)
 
 def compute_ood_score(P, model, ood_score, x, simclr_aug=None):
     model.eval()
