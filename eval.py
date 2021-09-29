@@ -46,20 +46,21 @@ elif P.mode in ['ood', 'ood_pre']:
                 if auroc > best_auroc:
                     best_auroc = auroc
 
-            for ood_score, roc in roc_dict[type][ood].items():
-                plt.figure()
-                fpr = roc_dict[ood][ood_score][0]
-                tpr = roc_dict[ood][ood_score][1]
-                plt.plot(fpr, tpr, color='darkorange', lw=2)
-                plt.plot([0, 1], [0, 1], color='navy', lw=2, linestyle='--')
-                plt.xlim([0.0, 1.0])
-                plt.ylim([0.0, 1.05])
-                plt.xlabel('False Positive Rate')
-                plt.ylabel('True Positive Rate')
-                plt.title('ROC')
-                plt.legend(loc="lower right")
-                plt.savefig(f'roc_curve_{type}_{ood}_{ood_score}.png')
-                print(f'saved roc_curve_{type}_{ood}_{ood_score}.png')
+
+            # for ood_score, roc in roc_dict[type][ood].items():
+            #     plt.figure()
+            #     fpr = roc_dict[type][ood][ood_score][0]
+            #     tpr = roc_dict[type][ood][ood_score][1]
+            #     plt.plot(fpr, tpr, color='darkorange', lw=2)
+            #     plt.plot([0, 1], [0, 1], color='navy', lw=2, linestyle='--')
+            #     plt.xlim([0.0, 1.0])
+            #     plt.ylim([0.0, 1.05])
+            #     plt.xlabel('False Positive Rate')
+            #     plt.ylabel('True Positive Rate')
+            #     plt.title('ROC')
+            #     plt.legend(loc="lower right")
+            #     plt.savefig(f'roc_curve_{type}_{ood}_{ood_score}.png')
+            #     print(f'saved roc_curve_{type}_{ood}_{ood_score}.png')
 
             message += '[%s %s %.4f] ' % (ood, 'best', best_auroc)
             if P.print_score:
@@ -68,6 +69,26 @@ elif P.mode in ['ood', 'ood_pre']:
 
     bests = map('{:.4f}'.format, bests)
     print('\t'.join(bests))
+
+    plt.figure()
+    plt.plot([0, 1], [0, 1], color='navy', lw=2, linestyle='--')
+    fpr = roc_dict['lateral']['one_class_1']['CSI'][0]
+    tpr = roc_dict['lateral']['one_class_1']['CSI'][1]
+    plt.plot(fpr, tpr, color='darkorange', lw=2, label='lateral')
+    fpr = roc_dict['frontal']['one_class_1']['CSI'][0]
+    tpr = roc_dict['frontal']['one_class_1']['CSI'][1]
+    plt.plot(fpr, tpr, color='darkgreen', lw=2, label='frontal')
+    fpr = roc_dict['combined']['one_class_1']['CSI'][0]
+    tpr = roc_dict['combined']['one_class_1']['CSI'][1]
+    plt.plot(fpr, tpr, color='brown', lw=2, label='combined')
+    plt.xlim([0.0, 1.0])
+    plt.ylim([0.0, 1.05])
+    plt.xlabel('False Positive Rate')
+    plt.ylabel('True Positive Rate')
+    plt.title('ROC')
+    plt.legend(loc="lower right")
+    plt.savefig(f'roc_curve.png')
+    print(f'saved roc_curve.png')
 
 else:
     raise NotImplementedError()
