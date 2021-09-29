@@ -54,6 +54,7 @@ elif P.mode in ['ood', 'ood_pre']:
             plt.title('ROC')
             plt.legend(loc="lower right")
             plt.savefig(f'roc_curve_{ood}_{ood_score}.png')
+            print(f'saved roc_curve_{ood}_{ood_score}.png')
 
         
         message += '[%s %s %.4f] ' % (ood, 'best', best_auroc)
