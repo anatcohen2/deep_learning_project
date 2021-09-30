@@ -273,7 +273,7 @@ def get_dataset(P, dataset, test_only=False, image_size=None, download=False, ev
         # image, label = train_set.__getitem__(1)
         test_set = CheXpertDataset(
             path_to_images=os.path.join(DATA_PATH, 'CheXpert-v1.0-small'),
-            fold='valid',
+            fold=f'valid_{P.ood_type}',
             include_uncertainty=False,
             transform=test_transform)
 

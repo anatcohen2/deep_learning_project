@@ -87,8 +87,8 @@ elif P.mode in ['ood', 'ood_pre']:
     plt.ylabel('True Positive Rate')
     plt.title('ROC')
     plt.legend(loc="lower right")
-    plt.savefig(f'roc_curve.png')
-    print(f'saved roc_curve.png')
+    plt.savefig(f'roc_curve_{P.ood_type}.png')
+    print(f'saved roc_curve_{P.ood_type}.png')
 
 else:
     raise NotImplementedError()
