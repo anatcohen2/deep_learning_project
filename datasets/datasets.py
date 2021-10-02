@@ -256,9 +256,16 @@ def get_dataset(P, dataset, test_only=False, image_size=None, download=False, ev
         # image_size = (64, 64, 1)    # TODO - check size is legal
         image_size = (image_size, image_size, 1)
         n_classes = 2   # TODO - right now - classes are only no_finding=0/1
-        train_set = CheXpertDataset(
+        train_set_frontal = CheXpertDataset(
             path_to_images=os.path.join(DATA_PATH, 'CheXpert-v1.0-small'),
-            fold='train',
+            fold='train_frontal',
+            include_uncertainty=False,
+            transform=train_transform,
+            sample=P.sample)
+
+        train_set_lateral = CheXpertDataset(
+            path_to_images=os.path.join(DATA_PATH, 'CheXpert-v1.0-small'),
+            fold='train_lateral',
             include_uncertainty=False,
             transform=train_transform,
             sample=P.sample)
@@ -266,7 +273,7 @@ def get_dataset(P, dataset, test_only=False, image_size=None, download=False, ev
         # image, label = train_set.__getitem__(1)
         test_set = CheXpertDataset(
             path_to_images=os.path.join(DATA_PATH, 'CheXpert-v1.0-small'),
-            fold='valid',
+            fold=f'valid_{P.ood_type}',
             include_uncertainty=False,
             transform=test_transform)
 
@@ -276,7 +283,7 @@ def get_dataset(P, dataset, test_only=False, image_size=None, download=False, ev
     if test_only:
         return test_set
     else:
-        return train_set, test_set, image_size, n_classes
+        return train_set_frontal, train_set_lateral, test_set, image_size, n_classes
 
 
 def get_superclass_list(dataset):

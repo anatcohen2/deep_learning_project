@@ -47,7 +47,7 @@ class CheXpertDataset(Dataset):
                 print("cannot filter on finding " + finding +
                       " as not in data - please check spelling")
 
-        self.df = self.df.set_index("Path")
+        # self.df = self.df.set_index("Path")
         self.PRED_LABEL = [
             'No Finding',
             'Enlarged Cardiomediastinum',
@@ -71,7 +71,7 @@ class CheXpertDataset(Dataset):
 
     def __getitem__(self, idx):
 
-        image = Image.open(os.path.join(self.path_to_images, self.df.index[idx]))
+        image = Image.open(os.path.join(self.path_to_images, self.df['Path'][idx]))
         # image = image.convert('RGB')
 
         # labels = np.zeros(len(self.PRED_LABEL), dtype=int)
