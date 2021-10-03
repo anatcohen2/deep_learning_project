@@ -85,7 +85,7 @@ elif P.mode in ['ood', 'ood_pre']:
     plt.ylim([0.0, 1.05])
     plt.xlabel('False Positive Rate')
     plt.ylabel('True Positive Rate')
-    plt.title('ROC')
+    plt.title(f'ROC - {P.ood_type}')
     plt.legend(loc="lower right")
     plt.savefig(f'roc_curve_{P.ood_type}.png')
     print(f'saved roc_curve_{P.ood_type}.png')
