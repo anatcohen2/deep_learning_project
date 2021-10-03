@@ -14,8 +14,9 @@ Currently, requires following packages
 - diffdist == 0.1
 
 ### Dataset
-Chexpert Dataset: A Large Chest X-Ray Dataset And Competition
+please download the following datasets to ~/data:
 
+Chexpert Dataset: A Large Chest X-Ray Dataset And Competition
 https://stanfordmlgroup.github.io/competitions/chexpert
 
 ## 2. Training
@@ -29,6 +30,7 @@ python -m train.py --dataset chexpert --model resnet18 --mode simclr_CSI --shift
 > --one_class_idx denotes the in-distribution of one-class training.
 
 ## 3. Evaluation
+We provide the checkpoints of the pre-trained model. It is available in the checkpoints directory.
 
 To evaluate the model, run this command:
 
