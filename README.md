@@ -14,7 +14,7 @@ Currently, requires following packages
 - diffdist == 0.1
 
 ### Dataset
-please download the following datasets to ~/data:
+please download the following dataset to ~/data:
 
 Chexpert Dataset: A Large Chest X-Ray Dataset And Competition
 https://stanfordmlgroup.github.io/competitions/chexpert
